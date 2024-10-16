@@ -16,6 +16,13 @@ def replace_layers(model, old, new):
             setattr(model, n, new)
 
 
+def reset_model(module):
+    for layer in module.children():
+        if hasattr(layer, "reset_parameters"):
+            layer.reset_parameters()
+        reset_model(layer)
+
+
 def train(dataloader, model, loss_fn, optimizer, device):
     size = len(dataloader.dataset)
     total_loss = 0
