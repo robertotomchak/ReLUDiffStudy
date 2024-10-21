@@ -9,10 +9,11 @@ import relu
 import model_utils
 import tester
 
-relu.restart_count()
+EPSILON = 0.00000011920928955078125
+torch.set_default_dtype(torch.float32)
 
 # Download training data from open datasets.
-training_data = datasets.FashionMNIST(
+training_data = datasets.MNIST(
     root="data",
     train=True,
     download=True,
@@ -20,7 +21,7 @@ training_data = datasets.FashionMNIST(
 )
 
 # Download test data from open datasets.
-test_data = datasets.FashionMNIST(
+test_data = datasets.MNIST(
     root="data",
     train=False,
     download=True,
@@ -66,9 +67,10 @@ class NeuralNetwork(nn.Module):
         return logits
 
 model = NeuralNetwork().to(device)
+model_utils.replace_layers(model, [nn.ReLU], relu.ReLUCount(EPSILON))
 
 loss_fn = nn.CrossEntropyLoss()
 optimizer = torch.optim.SGD(model.parameters(), lr=1e-3)
 
-tester.run(dataloaders, model, [nn.ReLU], relu.ReLUCount(0.0001), optimizer, loss_fn, device, epochs=5, executions=3)
+tester.run(dataloaders, model, optimizer, loss_fn, device, "test.csv", epochs=5, executions=3, relu_count=True)
 print("Done!")
