@@ -7,40 +7,65 @@ import torchvision
 import torch.nn as nn
 import time
 import numpy as np
+import pandas as pd
 
 import model_utils
 import relu
 
-def run(dataloader, model, old_activations, new_activation, optimizer, loss, device, output_layer=None, executions=5, epochs=10):
+
+def run(dataloader, model, optimizer, loss, device, csv_file, executions=5, epochs=10, relu_count=False):
+    TEST_INDEX = -1
+    columns = ["execution", "epoch", "train_loss", "val_loss", "val_acc", "time"]
+    if relu_count:
+        columns.append("zero_relu_call")
+        columns.append("total_relu_call")
+        relu.restart_count()
+    final_data = {column: [] for column in columns}
+
     data_train = dataloader["train"]
     data_val = dataloader["val"]
     data_test = dataloader["test"]
 
-    model_utils.replace_layers(model, old_activations, new_activation)
-    if output_layer:
-            model.fc = output_layer
-
     for i in range(executions):
         model_utils.reset_model(model)
         print(f"EXECUTION {i+1}")
-        train_loss = []
-        val_loss = []
-        val_acc = []
-        start = time.time()
+        # train
         for j in range(epochs):
             print("-"*30)
-            print(f"epoch {j+1}")
-            train_loss.append(model_utils.train(data_train, model, loss, optimizer, device))
-            acc, loss_score = model_utils.test(data_val, model, loss, device)
-            val_loss.append(loss_score)
-            val_acc.append(acc)
-        end = time.time()
-        print(train_loss[-1])
-        print(val_loss[-1])
-        print(val_acc[-1])
-        if isinstance(new_activation, relu.ReLUCount):
-            print(f"Relu proportion: {relu.get_relu_proportion()} [{relu.ZERO_RELU_CALL} / {relu.TOTAL_RELU_CALL}]")
-            relu.restart_count()
-        print(f"Time: {end - start} seconds")
+            print(f"EPOCH {j+1}")
+            start = time.time()
+            train_loss = (model_utils.train(data_train, model, loss, optimizer, device))
+            val_acc, val_loss = model_utils.test(data_val, model, loss, device)
+            end = time.time()
 
+            final_data["execution"].append(i+1)
+            final_data["epoch"].append(j+1)
+            final_data["train_loss"].append(train_loss)
+            final_data["val_loss"].append(val_loss)
+            final_data["val_acc"].append(val_acc)
+            final_data["time"].append(end - start)
+            if relu_count:
+                final_data["zero_relu_call"].append(relu.ZERO_RELU_CALL)
+                final_data["total_relu_call"].append(relu.TOTAL_RELU_CALL)
+                relu.restart_count()
+        # test
+        print("-"*30)
+        print("TEST")
+        start = time.time()
+        val_acc, val_loss = model_utils.test(data_test, model, loss, device)
+        end = time.time()
+        final_data["execution"].append(i+1)
+        final_data["epoch"].append(TEST_INDEX)
+        final_data["train_loss"].append(np.nan)
+        final_data["val_loss"].append(val_loss)
+        final_data["val_acc"].append(val_acc)
+        final_data["time"].append(end - start)
+        if relu_count:
+            final_data["zero_relu_call"].append(relu.ZERO_RELU_CALL)
+            final_data["total_relu_call"].append(relu.TOTAL_RELU_CALL)
+            relu.restart_count()
+
+    # save to csv
+    df = pd.DataFrame(final_data)
+    df.to_csv(csv_file, index=False)
 
