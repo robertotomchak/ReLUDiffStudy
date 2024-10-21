@@ -57,7 +57,7 @@ class NeuralNetwork(nn.Module):
             nn.Linear(28*28, 512),
             nn.ReLU(),
             nn.Linear(512, 512),
-            nn.ReLU(),
+            nn.Hardswish(),
             nn.Linear(512, 10)
         )
 
@@ -67,10 +67,11 @@ class NeuralNetwork(nn.Module):
         return logits
 
 model = NeuralNetwork().to(device)
-model_utils.replace_layers(model, [nn.ReLU], relu.ReLUCount(EPSILON))
+#model_utils.replace_layers(model, [nn.ReLU], relu.ReLUCount(EPSILON))
+#model_utils.replace_layers(model, [nn.Hardswish], relu.HardswishCount(EPSILON))
 
 loss_fn = nn.CrossEntropyLoss()
 optimizer = torch.optim.SGD(model.parameters(), lr=1e-3)
 
-tester.run(dataloaders, model, optimizer, loss_fn, device, "test.csv", epochs=5, executions=3, relu_count=True)
+tester.run(dataloaders, model, optimizer, loss_fn, device, "test_hardswish.csv", epochs=5, executions=3, relu_count=True)
 print("Done!")
