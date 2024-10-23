@@ -63,7 +63,7 @@ model = model_utils.create_mobile_net(relu.HardswishCount(EPSILON), relu.ReLUCou
 model = model.to(device)
 
 loss_fn = nn.CrossEntropyLoss()
-optimizer = torch.optim.SGD(model.parameters(), lr=1e-3)
+optimizer = torch.optim.SGD(model.parameters(), lr=1e-3, momentum=0.9)
 
 tester.run(dataloaders, model, optimizer, loss_fn, device, "mnist_count.csv", epochs=15, executions=5, relu_count=True)
 print("Done!")
