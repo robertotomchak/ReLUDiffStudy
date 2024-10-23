@@ -14,7 +14,7 @@ EPSILON = 0.00000011920928955078125
 torch.set_default_dtype(torch.float32)
 
 # Download training data from open datasets.
-training_data = datasets.MNIST(
+training_data = datasets.FashionMNIST(
     root="data",
     train=True,
     download=True,
@@ -26,7 +26,7 @@ training_data = datasets.MNIST(
 )
 
 # Download test data from open datasets.
-test_data = datasets.MNIST(
+test_data = datasets.FashionMNIST(
     root="data",
     train=False,
     download=True,
