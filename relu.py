@@ -39,7 +39,7 @@ class ReLU6CountFunction(torch.autograd.Function):
     def forward(ctx, input, tol):
         ctx.save_for_backward(input)
         ctx.tol = tol
-        return input.clamp(min=0)
+        return input.clamp(min=0, max=6)
     
     @staticmethod
     def backward(ctx, grad_output):

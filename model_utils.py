@@ -35,6 +35,7 @@ def create_mobile_net(activation_hardwish, activation_relu, last_output, pre_tra
     model = models.mobilenet_v3_small(pre_trained)
     replace_layers(model, [nn.Hardswish], activation_hardwish)
     replace_layers(model, [nn.ReLU], activation_relu)
+    model.features[0][0] = nn.Conv2d(1, 16, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), bias=False)
     model.classifier[3] = nn.Linear(model.classifier[3].in_features, last_output)
     
     for param in model.parameters():

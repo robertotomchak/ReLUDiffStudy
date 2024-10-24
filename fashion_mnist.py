@@ -19,8 +19,6 @@ training_data = datasets.FashionMNIST(
     train=True,
     download=True,
     transform=transforms.Compose([
-        transforms.Resize((224, 224)),
-        transforms.Grayscale(num_output_channels=3),
         ToTensor(),
     ])
 )
@@ -31,8 +29,6 @@ test_data = datasets.FashionMNIST(
     train=False,
     download=True,
     transform=transforms.Compose([
-        transforms.Resize((224, 224)),
-        transforms.Grayscale(num_output_channels=3),
         ToTensor(),
     ])
 )
@@ -63,7 +59,7 @@ model = model_utils.create_mobile_net(relu.HardswishCount(EPSILON), relu.ReLUCou
 model = model.to(device)
 
 loss_fn = nn.CrossEntropyLoss()
-optimizer = torch.optim.SGD(model.parameters(), lr=1e-3, momentum=0.9)
+optimizer = torch.optim.SGD(model.parameters(), lr=0.002, momentum=0.9)
 
-tester.run(dataloaders, model, optimizer, loss_fn, device, "mnist_count.csv", epochs=15, executions=5, relu_count=True)
+tester.run(dataloaders, model, optimizer, loss_fn, device, "mnist_count.csv", epochs=15, executions=3, relu_count=True)
 print("Done!")
