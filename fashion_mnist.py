@@ -19,6 +19,7 @@ training_data = datasets.FashionMNIST(
     train=True,
     download=True,
     transform=transforms.Compose([
+        transforms.Grayscale(num_output_channels=3),
         ToTensor(),
     ])
 )
@@ -29,6 +30,7 @@ test_data = datasets.FashionMNIST(
     train=False,
     download=True,
     transform=transforms.Compose([
+        transforms.Grayscale(num_output_channels=3),
         ToTensor(),
     ])
 )
@@ -39,9 +41,9 @@ train_data, val_data = random_split(training_data, [0.7, 0.3])
 
 # Create data loaders.
 dataloaders = {}
-dataloaders["train"] = DataLoader(train_data, batch_size=64)
-dataloaders["val"] = DataLoader(val_data, batch_size=64)
-dataloaders["test"] = DataLoader(test_data, batch_size=64)
+dataloaders["train"] = DataLoader(train_data, batch_size=32, shuffle=True)
+dataloaders["val"] = DataLoader(val_data, batch_size=1024, shuffle=False)
+dataloaders["test"] = DataLoader(test_data, batch_size=1024, shuffle=False)
 
 # Get cpu, gpu or mps device for training.
 device = (
@@ -59,7 +61,7 @@ model = model_utils.create_mobile_net(relu.HardswishCount(EPSILON), relu.ReLUCou
 model = model.to(device)
 
 loss_fn = nn.CrossEntropyLoss()
-optimizer = torch.optim.SGD(model.parameters(), lr=0.002, momentum=0.9)
+optimizer = torch.optim.SGD(model.parameters(), momentum=0.9)
 
-tester.run(dataloaders, model, optimizer, loss_fn, device, "mnist_count.csv", epochs=15, executions=3, relu_count=True)
+tester.run(dataloaders, model, optimizer, loss_fn, device, "mnist_count.csv", epochs=15, executions=5, relu_count=True)
 print("Done!")
