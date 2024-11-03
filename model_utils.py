@@ -31,7 +31,7 @@ def change_layer(model, layer_name, new_layer):
     model._modules[layer_name] = new_layer
 
 
-def create_mobile_net(activation_hardwish, activation_relu, activation_hardsigmoid, last_output, pre_trained=False):
+def create_mobile_net(activation_hardwish, activation_relu, activation_hardsigmoid, last_output, pre_trained=False, freeze=False):
     if pre_trained:
         model = models.mobilenet_v3_small(weights=torchvision.models.MobileNet_V3_Small_Weights.DEFAULT)
     else:
@@ -42,10 +42,16 @@ def create_mobile_net(activation_hardwish, activation_relu, activation_hardsigmo
         replace_layers(model, [nn.ReLU], activation_relu)
     if activation_hardsigmoid:
         replace_layers(model, [nn.Hardsigmoid], activation_hardsigmoid)
+        
     model.classifier[3] = nn.Linear(model.classifier[3].in_features, last_output)
     
-    for param in model.parameters():
-        param.requires_grad = True
+    if freeze:
+        for param in model.parameters():
+            param.requires_grad = False
+        model.classifier.requires_grad_ = True
+    else:
+        for param in model.parameters():
+            param.requires_grad = True
     return model
 
 
