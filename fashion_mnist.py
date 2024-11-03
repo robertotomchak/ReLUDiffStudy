@@ -47,7 +47,7 @@ dataloaders["test"] = DataLoader(test_data, batch_size=1024, shuffle=False)
 
 # Get cpu, gpu or mps device for training.
 device = (
-    "cuda"
+        "cuda:1"
     if torch.cuda.is_available()
     else "mps"
     if torch.backends.mps.is_available()
@@ -56,12 +56,12 @@ device = (
 print(f"Using {device} device")
 
 # Define model
-model = model_utils.create_mobile_net(relu.HardswishCount(EPSILON), relu.ReLUCount(EPSILON), 10, pre_trained=True)
+model = model_utils.create_mobile_net(None, None, None, 10, pre_trained=True)
 
 model = model.to(device)
 
 loss_fn = nn.CrossEntropyLoss()
 optimizer = torch.optim.SGD(model.parameters(), momentum=0.9)
 
-tester.run(dataloaders, model, optimizer, loss_fn, device, "mnist_count.csv", epochs=15, executions=5, relu_count=True)
+tester.run(dataloaders, model, optimizer, loss_fn, device, "mnist_original.csv", epochs=30, executions=5, relu_count=True)
 print("Done!")
