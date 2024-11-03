@@ -65,6 +65,43 @@ class ReLU6Count(nn.Module):
 
     def forward(self, input):
         return ReLU6CountFunction.apply(input, self.tol)
+    
+
+class HardSigmoidCountFunction(torch.autograd.Function):
+    @staticmethod
+    def forward(ctx, input, tol):
+        ctx.save_for_backward(input)
+        ctx.tol = tol
+        output = input.clone()
+        output[input <= -3] = 0
+        output[input >=  3] = 1
+        output[input.abs() < 3] = input[input.abs() < 3] / 6 + 0.5
+        return output
+    
+    @staticmethod
+    def backward(ctx, grad_output):
+        (input,) = ctx.saved_tensors
+        grad_input = grad_output.clone()
+
+        global TOTAL_RELU_CALL
+        global ZERO_RELU_CALL
+        TOTAL_RELU_CALL += torch.numel(grad_input)
+        ZERO_RELU_CALL += torch.numel(grad_input[((input).abs() - 3).abs() <= ctx.tol])
+
+        grad_input[input < -3] = 0
+        grad_input[input == -3] = 0
+        grad_input[input > 3] = 0
+        grad_input[input == 3] = 0
+        grad_input[input.abs() < 3] = 1 / 6
+        return grad_input, None
+
+class HardSigmoidCount(nn.Module):
+    def __init__(self, tol):
+        super(HardSigmoidCount, self).__init__()
+        self.tol = tol
+
+    def forward(self, input):
+        return HardSigmoidCountFunction.apply(input, self.tol)
 
 
 class HardswishCount(nn.Module):
