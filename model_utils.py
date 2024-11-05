@@ -48,7 +48,8 @@ def create_mobile_net(activation_hardwish, activation_relu, activation_hardsigmo
     if freeze:
         for param in model.parameters():
             param.requires_grad = False
-        model.classifier.requires_grad_ = True
+        for param in model.classifier.parameters():
+            param.requires_grad = True
     else:
         for param in model.parameters():
             param.requires_grad = True
