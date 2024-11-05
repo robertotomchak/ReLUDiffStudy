@@ -1,71 +1,59 @@
 import torch
 import torch.nn as nn
-from time import time
+import time
 
-N = 1_000_000
-EXECUTIONS = 100
+N = 1_000
+EXECUTIONS = 30
+DEVICE = "cuda:1"
 
-def test_activation(activation, device, n=1_000_000, executions=10):
-    total = 0
-    values = torch.randn(size=(executions, n), device=device, requires_grad=True)
-    # warmup
-    activation(values)
-
-    if torch.cuda.is_available():
-        torch.cuda.synchronize()
-    t = time()
-    for i in range(executions):
-        ans = activation(values[i])
-    if torch.cuda.is_available():
-        torch.cuda.synchronize()
-    t = time() - t
-    return t / executions
-
-def test_activation_diff(activation, device, n=1_000_000, executions=10):
-    total = 0
-    values = torch.randn(size=(executions, n), device=device, requires_grad=True)
-    # warmup
-    ans = activation(values)
-    ans.backward(torch.ones_like(values))
-
-    if torch.cuda.is_available():
-        torch.cuda.synchronize()
-    t = time()
-    for i in range(executions):
-        values[i].grad = None
-        ans = activation(values[i])
-        ans.backward(torch.ones_like(values[i]))
-    if torch.cuda.is_available():
-        torch.cuda.synchronize()
-    t = time() - t
-    return t / n
-
-def compare_activations(activation1, activation2, name1, name2, device):
-    activation1.to(device)
-    activation2.to(device)
-    time_activation1 = test_activation(activation1, device, n=N, executions=EXECUTIONS)
-    time_activation2 = test_activation(activation2, device, n=N, executions=EXECUTIONS)
-    time_activation1_b = test_activation_diff(activation1, device, n=N, executions=EXECUTIONS)
-    time_activation2_b = test_activation_diff(activation2, device, n=N, executions=EXECUTIONS)
+def print_results(name1, name2, times):
     print(f"{name1} vs {name2}")
-    print(f"FORWARD: {name1} is {round(time_activation1 / time_activation2, 2)}x slower than {name2}")
-    print(f"BACKWARD: {name1} is {round(time_activation1_b / time_activation2_b, 2)}x slower than {name2}")
+    print(f"{name1}: {times[name1]*1000} miliseconds")
+    print(f"{name2}: {times[name2]*1000} miliseconds")
+    print(f"{name1} is {round(times[name1] / times[name2], 2)}x slower than {name2}")
     print("-"*30)
 
-device = (
-    "cuda:1"
-    if torch.cuda.is_available()
-    else "mps"
-    if torch.backends.mps.is_available()
-    else "cpu"
-)
+def test_activation_speed(input_size=(N, N), executions=EXECUTIONS, device=DEVICE):
+    # Generate a random input tensor
+    input_tensor = torch.randn(input_size)
+    
+    # List of activation functions to test
+    activations = {
+        "Tanh": nn.Tanh(),  # just for warmup
+        "ReLU": nn.ReLU(),
+        "GELU": nn.GELU(),
+        "Hardswish": nn.Hardswish(),
+        "Swish": nn.SiLU(),
+        "Hardsigmoid": nn.Hardsigmoid(),
+        "Sigmoid": nn.Sigmoid()
+    }
+    for name, activation in activations.items():
+        activation.to(device)
+    
+    # Dictionary to store execution times
+    execution_times = {}
+    
+    # Perform the benchmarking for each activation function
+    for name, activation in activations.items():
+        t = time.time()
+        for i in range(executions):
+            ans = activation(input_tensor)
+        torch.cuda.current_stream().synchronize()
+        t = time.time() - t
+        
+        avg_time = (t) / executions
+        execution_times[name] = avg_time
 
-print("TEST DESCRIPTION")
-print(f"N = {N:_}")
-print(f"Executions = {EXECUTIONS}")
-print(f"Device = {device}")
-print(f"-"*30)
+    # Print the execution times
+    print_results("GELU", "ReLU", execution_times)
+    print_results("Swish", "Hardswish", execution_times)
+    print_results("Sigmoid", "Hardsigmoid", execution_times)
 
-compare_activations(nn.GELU(), nn.ReLU(), "GELU", "ReLU", device)
-compare_activations(nn.SiLU(), nn.Hardswish(), "Swish", "Hardswish", device)
-compare_activations(nn.Sigmoid(), nn.Hardsigmoid(), "Sigmoid", "HardSigmoid", device)
+
+print("TEST DESCRIPTION:")
+print(f"TENSOR SIZE = ({N}, {N})")
+print(f"EXECUTIONS = {EXECUTIONS}")
+print(f"DEVICE = {DEVICE}")
+print("-"*30)
+
+test_activation_speed()
