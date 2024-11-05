@@ -92,7 +92,7 @@ class HardSigmoidCountFunction(torch.autograd.Function):
         grad_input[input == -3] = 0
         grad_input[input > 3] = 0
         grad_input[input == 3] = 0
-        grad_input[input.abs() < 3] = 1 / 6
+        grad_input[input.abs() < 3] = grad_input[input.abs() < 3] / 6
         return grad_input, None
 
 class HardSigmoidCount(nn.Module):
