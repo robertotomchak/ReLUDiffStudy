@@ -83,10 +83,10 @@ class Hochuli(nn.Module):
             nn.MaxPool2d(kernel_size=2, stride=2, padding=0),
             nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1, padding=0),
             activation_relu,
-            nn.MaxPool2d(kernel_size=2, stride=2, padding=0)
+            #nn.MaxPool2d(kernel_size=2, stride=2, padding=0)
         )
         self.flatten = nn.Flatten()
-        self.fully_connected = (
+        self.fully_connected = nn.Sequential(
             nn.Linear(size_conv_output(input_shape), 64), 
             activation_relu,
             nn.Linear(64, last_output)
