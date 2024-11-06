@@ -56,6 +56,49 @@ def create_mobile_net(activation_hardwish, activation_relu, activation_hardsigmo
     return model
 
 
+# calculates size of output of convolutions of the Hachuli layer
+def size_conv_output(input_shape):
+    w, h = input_shape[1], input_shape[2]
+    # first pool layer
+    w, h = w // 2, h // 2
+    # second conv
+    w, h = w - 2, h - 2
+    # second pool
+    w, h = w // 2, h // 2
+    # third conv
+    w, h = w - 2, h - 2
+    return w * h * 64
+
+
+# defines the hochuli network
+class Hochuli(nn.Module):
+    def __init__(self, input_shape, last_output, activation_relu):
+        super(Hochuli, self).__init__()
+        self.convolution = nn.Sequential(
+            nn.Conv2d(in_channels=input_shape[0], out_channels=32, kernel_size=3, stride=1, padding=1),
+            activation_relu,
+            nn.MaxPool2d(kernel_size=2, stride=2, padding=0),
+            nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3, stride=1, padding=0),
+            activation_relu,
+            nn.MaxPool2d(kernel_size=2, stride=2, padding=0),
+            nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1, padding=0),
+            activation_relu,
+            nn.MaxPool2d(kernel_size=2, stride=2, padding=0)
+        )
+        self.flatten = nn.Flatten()
+        self.fully_connected = (
+            nn.Linear(size_conv_output(input_shape), 64), 
+            activation_relu,
+            nn.Linear(64, last_output)
+        )
+
+    def forward(self, x):
+        x = self.convolution(x)
+        x = self.flatten(x)
+        x = self.fully_connected(x)
+        return x
+
+
 def train(dataloader, model, loss_fn, optimizer, device):
     size = len(dataloader.dataset)
     total_loss = 0
