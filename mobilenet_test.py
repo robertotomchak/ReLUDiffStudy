@@ -5,13 +5,31 @@ from torchvision import datasets
 import torchvision.transforms as transforms
 from torchvision.transforms import ToTensor
 from torch.utils.data import random_split
+from random import randint
 
 import relu
 import model_utils
 import tester
 
+EXECUTIONS = 2
+EPOCHS = 5
+# generate seeds for executions
+SEEDS = [randint(1, 100) for _ in range(EXECUTIONS)]
+
 EPSILON = 0.00000011920928955078125
 torch.set_default_dtype(torch.float32)
+
+# creates the mobilenet with given activations and makes the test
+def test_activations(new_relu, new_hs, new_sigmoid, results_path):
+    model = model_utils.create_mobile_net(new_relu, new_hs, new_sigmoid, 
+                                          10, pre_trained=True, freeze=True)
+    model = model.to(device)
+    loss_fn = nn.CrossEntropyLoss()
+    optimizer = torch.optim.SGD(model.parameters(), momentum=0.9)
+    print("#"*30)
+    print(f"CREATING RESULTS FOR {results_path}:")
+    print("#"*30)
+    tester.run(dataloaders, model, optimizer, loss_fn, device, results_path, epochs=EPOCHS, seeds=SEEDS, relu_count=True)
 
 # Download training data from open datasets.
 training_data = datasets.FashionMNIST(
@@ -47,7 +65,7 @@ dataloaders["test"] = DataLoader(test_data, batch_size=1024, shuffle=False)
 
 # Get cpu, gpu or mps device for training.
 device = (
-        "cuda:1"
+    "cuda:1"
     if torch.cuda.is_available()
     else "mps"
     if torch.backends.mps.is_available()
@@ -55,13 +73,9 @@ device = (
 )
 print(f"Using {device} device")
 
-# Define model
-model = model_utils.create_mobile_net(nn.SiLU(), nn.GELU(), nn.Sigmoid(), 10, pre_trained=True, freeze=True)
-
-model = model.to(device)
-
-loss_fn = nn.CrossEntropyLoss()
-optimizer = torch.optim.SGD(model.parameters(), momentum=0.9)
-
-tester.run(dataloaders, model, optimizer, loss_fn, device, "mnist_diff_freeze.csv", epochs=30, executions=5, relu_count=True)
+# test for each activation functions group
+test_activations(nn.ReLU(), nn.Hardswish(), nn.Hardsigmoid(), "results/mobilenet/original.csv")
+test_activations(relu.ReLUCount(EPSILON), relu.HardswishCount(EPSILON), relu.HardSigmoidCount(EPSILON), "results/mobilenet/count.csv")
+test_activations(nn.GELU(), nn.SiLU(), nn.Sigmoid(), "results/mobilenet/diff.csv")
+print(f"SEEDS = {SEEDS}")
 print("Done!")

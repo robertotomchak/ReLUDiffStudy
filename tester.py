@@ -8,13 +8,15 @@ import torch.nn as nn
 import time
 import numpy as np
 import pandas as pd
+import random
 
 import model_utils
 import relu
 
 
-def run(dataloader, model, optimizer, loss, device, csv_file, executions=5, epochs=10, relu_count=False):
+def run(dataloader, model, optimizer, loss, device, csv_file, seeds, epochs=10, relu_count=False):
     TEST_INDEX = -1
+    executions = len(seeds)
     columns = ["execution", "epoch", "train_loss", "val_loss", "val_acc", "time"]
     if relu_count:
         columns.append("zero_relu_call")
@@ -27,8 +29,10 @@ def run(dataloader, model, optimizer, loss, device, csv_file, executions=5, epoc
     data_test = dataloader["test"]
 
     for i in range(executions):
+        torch.manual_seed(seeds[i])
+        random.seed(seeds[i])
         model_utils.reset_model(model)
-        print(f"EXECUTION {i+1}")
+        print(f"EXECUTION {i+1}, SEED {seeds[i]}")
         # train
         for j in range(epochs):
             print("-"*30)
@@ -51,6 +55,7 @@ def run(dataloader, model, optimizer, loss, device, csv_file, executions=5, epoc
         # test
         print("-"*30)
         print("TEST")
+        print("-"*30)
         start = time.time()
         val_acc, val_loss = model_utils.test(data_test, model, loss, device)
         end = time.time()
