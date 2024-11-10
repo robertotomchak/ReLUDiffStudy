@@ -78,14 +78,25 @@ dataloaders["test"] = DataLoader(test_data, batch_size=1024, shuffle=False)
 # Define model
 print(f"MODEL SEED: {MODEL_SEED}")
 torch.manual_seed(MODEL_SEED)
-model_original = model_utils.Hochuli(INPUT_SHAPE, NUM_CLASSES, nn.ReLU())
+model = model_utils.Hochuli(INPUT_SHAPE, NUM_CLASSES, nn.ReLU())
 
-model_count = copy.deepcopy(model_original)
+model_original = copy.deepcopy(model)
+
+model_count = copy.deepcopy(model)
 model_utils.replace_layers(model_count, [nn.ReLU], relu.ReLU6Count(EPSILON))
 
-model_diff = copy.deepcopy(model_original)
+model_diff = copy.deepcopy(model)
 model_utils.replace_layers(model_diff, [nn.ReLU], nn.GELU())
 
+
+# warmup to reduce time discrepancy
+print("WARMUP")
+model = model.to(device)
+loss_fn = nn.CrossEntropyLoss()
+optimizer = torch.optim.SGD(model.parameters(), momentum=0.9)
+tester.run(dataloaders, model, optimizer, loss_fn, device, "warmup.csv", epochs=5, seeds=[0], relu_count=True)
+print("END WARMUP")
+print()
 
 test_activations(model_original, "results/hochuli/original.csv")
 test_activations(model_count, "results/hochuli/count.csv")

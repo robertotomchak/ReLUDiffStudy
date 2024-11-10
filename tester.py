@@ -58,6 +58,7 @@ def run(dataloader, model, optimizer, loss, device, csv_file, seeds, epochs=10, 
         print("-"*30)
         start = time.time()
         val_acc, val_loss = model_utils.test(data_test, model, loss, device)
+        torch.cuda.current_stream().synchronize()  # Waits for everything to finish running
         end = time.time()
         final_data["execution"].append(i+1)
         final_data["epoch"].append(TEST_INDEX)
