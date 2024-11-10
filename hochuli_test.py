@@ -6,6 +6,7 @@ import torchvision.transforms as transforms
 from torchvision.transforms import ToTensor
 from torch.utils.data import random_split
 from random import randint
+import copy
 
 import relu
 import model_utils
@@ -77,17 +78,20 @@ dataloaders["test"] = DataLoader(test_data, batch_size=1024, shuffle=False)
 # Define model
 print(f"MODEL SEED: {MODEL_SEED}")
 torch.manual_seed(MODEL_SEED)
-model = model_utils.Hochuli(INPUT_SHAPE, NUM_CLASSES, nn.ReLU())
+model_original = model_utils.Hochuli(INPUT_SHAPE, NUM_CLASSES, nn.ReLU())
 
-test_activations(model, "results/hochuli/original.csv")
+model_count = copy.deepcopy(model_original)
+model_utils.replace_layers(model_count, [nn.ReLU], relu.ReLU6Count(EPSILON))
 
-model_utils.reset_model(model)
-model_utils.replace_layers(model, [nn.ReLU], relu.ReLU6Count(EPSILON))
-test_activations(model, "results/hochuli/count.csv")
+model_diff = copy.deepcopy(model_original)
+model_utils.replace_layers(model_diff, [nn.ReLU], nn.GELU())
 
-model_utils.reset_model(model)
-model_utils.replace_layers(model, [relu.ReLU6Count], nn.GELU())
-test_activations(model, "results/hochuli/diff.csv")
 
+test_activations(model_original, "results/hochuli/original.csv")
+test_activations(model_count, "results/hochuli/count.csv")
+test_activations(model_diff, "results/hochuli/diff.csv")
+
+print(f"MODEL SEED = {MODEL_SEED}")
+print(f"SEEDS = {SEEDS}")
 print("Done!")
 
