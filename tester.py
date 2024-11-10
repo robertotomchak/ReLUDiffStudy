@@ -40,6 +40,7 @@ def run(dataloader, model, optimizer, loss, device, csv_file, seeds, epochs=10, 
             start = time.time()
             train_loss = (model_utils.train(data_train, model, loss, optimizer, device))
             val_acc, val_loss = model_utils.test(data_val, model, loss, device)
+            torch.cuda.current_stream().synchronize()  # Waits for everything to finish running
             end = time.time()
 
             final_data["execution"].append(i+1)
