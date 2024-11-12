@@ -5,13 +5,40 @@ from torchvision import datasets
 import torchvision.transforms as transforms
 from torchvision.transforms import ToTensor
 from torch.utils.data import random_split
+from random import randint
+import copy
 
 import relu
 import model_utils
 import tester
 
+EXECUTIONS = 5
+EPOCHS = 50
+# generate seeds for executions
+SEEDS = [randint(1, 100) for _ in range(EXECUTIONS)]
+MODEL_SEED = randint(1, 100)
+
 EPSILON = 0.00000011920928955078125
 torch.set_default_dtype(torch.float32)
+
+# Get cpu, gpu or mps device for training.
+device = (
+    "cuda:1"
+    if torch.cuda.is_available()
+    else "mps"
+    if torch.backends.mps.is_available()
+    else "cpu"
+)
+print(f"Using {device} device")
+
+def test_activations(model, results_path):
+    model = model.to(device)
+    loss_fn = nn.CrossEntropyLoss()
+    optimizer = torch.optim.SGD(model.parameters(), momentum=0.9)
+    print("#"*30)
+    print(f"CREATING RESULTS FOR {results_path}:")
+    print("#"*30)
+    tester.run(dataloaders, model, optimizer, loss_fn, device, results_path, epochs=EPOCHS, seeds=SEEDS, relu_count=True)
 
 # Download training data from open datasets.
 training_data = datasets.FashionMNIST(
@@ -48,24 +75,34 @@ dataloaders["train"] = DataLoader(train_data, batch_size=32, shuffle=True)
 dataloaders["val"] = DataLoader(val_data, batch_size=1024, shuffle=False)
 dataloaders["test"] = DataLoader(test_data, batch_size=1024, shuffle=False)
 
-# Get cpu, gpu or mps device for training.
-device = (
-    "cuda:1"
-    if torch.cuda.is_available()
-    else "mps"
-    if torch.backends.mps.is_available()
-    else "cpu"
-)
-print(f"Using {device} device")
-
 # Define model
-model = model_utils.Hochuli(INPUT_SHAPE, NUM_CLASSES, relu.ReLU6Count(EPSILON))
+print(f"MODEL SEED: {MODEL_SEED}")
+torch.manual_seed(MODEL_SEED)
+model = model_utils.Hochuli(INPUT_SHAPE, NUM_CLASSES, nn.ReLU())
 
+model_original = copy.deepcopy(model)
+
+model_count = copy.deepcopy(model)
+model_utils.replace_layers(model_count, [nn.ReLU], relu.ReLU6Count(EPSILON))
+
+model_diff = copy.deepcopy(model)
+model_utils.replace_layers(model_diff, [nn.ReLU], nn.GELU())
+
+
+# warmup to reduce time discrepancy
+print("WARMUP")
 model = model.to(device)
-
 loss_fn = nn.CrossEntropyLoss()
 optimizer = torch.optim.SGD(model.parameters(), momentum=0.9)
+tester.run(dataloaders, model, optimizer, loss_fn, device, "warmup.csv", epochs=5, seeds=[0], relu_count=True)
+print("END WARMUP")
+print()
 
-tester.run(dataloaders, model, optimizer, loss_fn, device, "hochuli/mnist_count.csv", epochs=30, executions=5, relu_count=True)
+test_activations(model_original, "results/hochuli/original.csv")
+test_activations(model_count, "results/hochuli/count.csv")
+test_activations(model_diff, "results/hochuli/diff.csv")
+
+print(f"MODEL SEED = {MODEL_SEED}")
+print(f"SEEDS = {SEEDS}")
 print("Done!")
 
