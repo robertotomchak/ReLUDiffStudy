@@ -31,7 +31,7 @@ def change_layer(model, layer_name, new_layer):
     model._modules[layer_name] = new_layer
 
 
-def create_mobile_net(activation_hardwish, activation_relu, activation_hardsigmoid, last_output, pre_trained=False, freeze=False):
+def create_mobile_net(activation_relu, activation_hardwish, activation_hardsigmoid, last_output, pre_trained=False, freeze=False):
     if pre_trained:
         model = models.mobilenet_v3_small(weights=torchvision.models.MobileNet_V3_Small_Weights.DEFAULT)
     else:
