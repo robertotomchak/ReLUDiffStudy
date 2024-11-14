@@ -9,6 +9,8 @@ import time
 import numpy as np
 import pandas as pd
 import random
+import copy
+import math
 
 import model_utils
 import relu
@@ -34,6 +36,8 @@ def run(dataloader, model, optimizer, loss, device, csv_file, seeds, epochs=10, 
         model_utils.reset_model(model)
         print(f"EXECUTION {i+1}, SEED {seeds[i]}")
         # train
+        best_model = copy.deepcopy(model.state_dict())
+        best_loss = math.inf
         for j in range(epochs):
             print("-"*30)
             print(f"EPOCH {j+1}")
@@ -53,10 +57,14 @@ def run(dataloader, model, optimizer, loss, device, csv_file, seeds, epochs=10, 
                 final_data["zero_relu_call"].append(relu.ZERO_RELU_CALL)
                 final_data["total_relu_call"].append(relu.TOTAL_RELU_CALL)
                 relu.restart_count()
+            if val_loss < best_loss:
+                best_loss = val_loss
+                best_model = copy.deepcopy(model.state_dict())
         # test
         print("-"*30)
         print("TEST")
         print("-"*30)
+        model.load_state_dict(best_model)
         start = time.time()
         val_acc, val_loss = model_utils.test(data_test, model, loss, device)
         torch.cuda.current_stream().synchronize()  # Waits for everything to finish running
