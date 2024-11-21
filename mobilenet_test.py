@@ -11,8 +11,8 @@ import relu
 import model_utils
 import tester
 
-EXECUTIONS = 2
-EPOCHS = 5
+EXECUTIONS = 5
+EPOCHS = 30
 # generate seeds for executions
 SEEDS = [randint(1, 100) for _ in range(EXECUTIONS)]
 
@@ -22,7 +22,7 @@ torch.set_default_dtype(torch.float32)
 # creates the mobilenet with given activations and makes the test
 def test_activations(new_relu, new_hs, new_sigmoid, results_path):
     model = model_utils.create_mobile_net(new_relu, new_hs, new_sigmoid, 
-                                          10, pre_trained=True, freeze=True)
+                                          10, pre_trained=True, freeze=False)
     model = model.to(device)
     loss_fn = nn.CrossEntropyLoss()
     optimizer = torch.optim.SGD(model.parameters(), momentum=0.9)
@@ -65,7 +65,7 @@ dataloaders["test"] = DataLoader(test_data, batch_size=1024, shuffle=False)
 
 # Get cpu, gpu or mps device for training.
 device = (
-    "cuda:1"
+    "cuda:0"
     if torch.cuda.is_available()
     else "mps"
     if torch.backends.mps.is_available()
