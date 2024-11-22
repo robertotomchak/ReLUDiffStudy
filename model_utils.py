@@ -57,7 +57,7 @@ def create_mobile_net(activation_relu, activation_hardwish, activation_hardsigmo
 
 
 # calculates size of output of convolutions of the Hachuli layer
-def size_conv_output(input_shape):
+def size_conv_output(input_shape, num_kernels):
     w, h = input_shape[1], input_shape[2]
     # first pool layer
     w, h = w // 2, h // 2
@@ -69,7 +69,7 @@ def size_conv_output(input_shape):
     w, h = w - 2, h - 2
     # third pool
     w, h = w // 2, h // 2
-    return w * h * 64
+    return w * h * num_kernels
 
 
 # defines the hochuli network
@@ -90,6 +90,67 @@ class Hochuli(nn.Module):
         self.flatten = nn.Flatten()
         self.fully_connected = nn.Sequential(
             nn.Linear(size_conv_output(input_shape), 64), 
+            activation_relu,
+            nn.Linear(64, last_output)
+        )
+
+    def forward(self, x):
+        x = self.convolution(x)
+        x = self.flatten(x)
+        x = self.fully_connected(x)
+        return x
+    
+
+# defines the hochuli network with double convolution kernels
+class HochuliDoubleKernels(nn.Module):
+    def __init__(self, input_shape, last_output, activation_relu):
+        super(HochuliDoubleKernels, self).__init__()
+        self.convolution = nn.Sequential(
+            nn.Conv2d(in_channels=input_shape[0], out_channels=64, kernel_size=3, stride=1, padding=1),
+            activation_relu,
+            nn.MaxPool2d(kernel_size=2, stride=2, padding=0),
+            nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, stride=1, padding=0),
+            activation_relu,
+            nn.MaxPool2d(kernel_size=2, stride=2, padding=0),
+            nn.Conv2d(in_channels=128, out_channels=128, kernel_size=3, stride=1, padding=0),
+            activation_relu,
+            nn.MaxPool2d(kernel_size=2, stride=2, padding=0)
+        )
+        self.flatten = nn.Flatten()
+        self.fully_connected = nn.Sequential(
+            nn.Linear(size_conv_output(input_shape, 128), 64), 
+            activation_relu,
+            nn.Linear(64, last_output)
+        )
+
+    def forward(self, x):
+        x = self.convolution(x)
+        x = self.flatten(x)
+        x = self.fully_connected(x)
+        return x
+    
+
+# defines the hochuli network with max pools replaced by convolutions + relu
+class HochuliDeep(nn.Module):
+    def __init__(self, input_shape, last_output, activation_relu):
+        super(HochuliDeep, self).__init__()
+        self.convolution = nn.Sequential(
+            nn.Conv2d(in_channels=input_shape[0], out_channels=32, kernel_size=3, stride=1, padding=1),
+            activation_relu,
+            nn.Conv2d(in_channels=32, out_channels=32, kernel_size=2, stride=2, padding=0),
+            activation_relu,
+            nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3, stride=1, padding=0),
+            activation_relu,
+            nn.Conv2d(in_channels=64, out_channels=64, kernel_size=2, stride=2, padding=0),
+            activation_relu,
+            nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1, padding=0),
+            activation_relu,
+            nn.Conv2d(in_channels=64, out_channels=64, kernel_size=2, stride=2, padding=0),
+            activation_relu
+        )
+        self.flatten = nn.Flatten()
+        self.fully_connected = nn.Sequential(
+            nn.Linear(size_conv_output(input_shape, 64), 64), 
             activation_relu,
             nn.Linear(64, last_output)
         )
