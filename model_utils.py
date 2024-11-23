@@ -89,7 +89,7 @@ class Hochuli(nn.Module):
         )
         self.flatten = nn.Flatten()
         self.fully_connected = nn.Sequential(
-            nn.Linear(size_conv_output(input_shape), 64), 
+            nn.Linear(size_conv_output(input_shape, 64), 64), 
             activation_relu,
             nn.Linear(64, last_output)
         )

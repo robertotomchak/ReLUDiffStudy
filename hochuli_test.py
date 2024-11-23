@@ -16,19 +16,14 @@ EXECUTIONS = 5
 EPOCHS = 50
 # generate seeds for executions
 SEEDS = [randint(1, 100) for _ in range(EXECUTIONS)]
-MODEL_SEED = randint(1, 100)
+MODEL_SEED = 42
 
 EPSILON = 0.00000011920928955078125
 torch.set_default_dtype(torch.float32)
 
-# Get cpu, gpu or mps device for training.
-device = (
-    "cuda:1"
-    if torch.cuda.is_available()
-    else "mps"
-    if torch.backends.mps.is_available()
-    else "cpu"
-)
+device = input()
+if not device:
+    device = "cuda"
 print(f"Using {device} device")
 
 def test_activations(model, results_path):
