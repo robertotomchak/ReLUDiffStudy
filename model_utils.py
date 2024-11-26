@@ -197,3 +197,6 @@ def test(dataloader, model, loss_fn, device):
     test_loss /= num_batches
     correct /= size
     return correct, test_loss
+
+def count_parameters(model):
+    return sum(p.numel() for p in model.parameters() if p.requires_grad)
