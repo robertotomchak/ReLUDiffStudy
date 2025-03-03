@@ -78,7 +78,7 @@ model = model_utils.Hochuli(INPUT_SHAPE, NUM_CLASSES, nn.ReLU())
 model_original = copy.deepcopy(model)
 
 model_count = copy.deepcopy(model)
-model_utils.replace_layers(model_count, [nn.ReLU], relu.ReLU6Count(EPSILON))
+model_utils.replace_layers(model_count, [nn.ReLU], relu.ReLUCount(EPSILON))
 
 model_diff = copy.deepcopy(model)
 model_utils.replace_layers(model_diff, [nn.ReLU], nn.GELU())
